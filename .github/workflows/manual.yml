@@ -8,24 +8,27 @@ on:
   workflow_dispatch:
     # Inputs the workflow accepts.
     inputs:
+      azuresubid:
+        description: 'What Azure Subscription you would like to deploy this to? if so enter the Azure Subscription Id.'
+        required: true
       projectname:
         # Friendly description to be shown in the UI instead of 'name'
-        description: 'What is the WebSite name (usually the Project name like CORA)'
+        description: 'What is the WebSite name (usually the Project name like CORA)?'
         # Default value if no value is explicitly provided
         default: 'JiminyCricket'
         # Input has to be provided for the workflow to run
         required: true
-      sendgridacctpwd:
-        description: 'Do you have a Sendgrid account?  Enter the password?'
-        required: false
       sendgridacctemail:
-        description: 'Do you have a Sendgrid account?  Enter the email?'
+        description: 'Do you have a Sendgrid account? if so enter the email address (someone@somewhere.com)?'
+        required: false
+      twiliosms:
+        description: 'Do you have a Twilio account? if so enter the phone number (+12343456789)?'
         required: false
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   # This workflow contains a single job called "greet"
-  greet:
+  deploying:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -33,13 +36,15 @@ jobs:
     steps:
     # Runs a single command using the runners shell
     - name: Send greeting
-      run: echo "Hello ${{ github.event.inputs.name }}"
+      run: echo "Creating ${{ github.event.inputs.projectname }}"
     
     - name: Azure PowerShell Action
       uses: Azure/powershell@v1
       with:
         # Specify the Az PowerShell script here.
         inlineScript: 
+          Connect-AzAccount -SubscriptionId ${{ github.event.inputs.azuresubid }}"
+          
         # Azure PS version to be used to execute the script, example: 1.8.0, 2.8.0, 3.4.0. To use the latest version, specify "latest".
         azPSVersion: "latest"
         # Select the value of the ErrorActionPreference variable for executing the script. Options: stop, continue, silentlyContinue. Default is Stop.
