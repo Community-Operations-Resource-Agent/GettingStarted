@@ -1,47 +1,31 @@
 # GettingStarted
 If you're not sure what to do, start here!
 
+# Things to know
+
+Some of the functionality Email and SMS management require seperate accounts.
+## SendGrid
+    - If you don't have a SendGrid account don't enter an email account and the deployment will occur without the SendGrid resource.
+    - We use SendGrid to manage email, you can setup a free account. https://sendgrid.com/marketing/sendgrid-services-cro/?extProvId=56&extPu=72368-bingads&extLi=110161520&extCr=1649139542-&extSi=&extTg=&keyword=sendgrid&extAP=&extMT=e&pub=BingAds&msclkid=1327b646baa312de836fe96745dd587c&utm_medium=cpc&utm_source=bing
+    - To secure the necessary password you will need to update the "SendGrid_Account_Password" secret.  This will secure the password while allowing the deployment to use it securely.
+    
+## Twilio SMS 
+    - If you don't have a Twilio account don't enter a phone number and the deployment will occur without the SMS resource.
+    - You can setup a free account: https://www.twilio.com/try-twilio
+    - To secure the account id and authentication token will need to be updated "Twilio_Account_ID" and "Twilio_Account_Token"
+## Bing Map API
+    - Bing Map API
+    - Setup https://www.bingmapsportal.com/
+    - Secret API key "Bing_Map_API_KEY"
 ## TO DO
 Add deployment to create resources and the necessary information here.
 
-# Developer Getting Started
+# Overview
 There are four projects; 
 - Getting Started focuses on getting the infrastructure created in the least amount of effort.  This will include scripts, ARM templates, and documents.
 - CoraBot contains the code for the bot and the messaging.
 - Website has the web site code.
 - DataModel, will eventually have a generalized data interface.  NYI
 
-The basic workflow is to make a fork of the project that you are working on and when done submit a PR back.
+Fork each of the repositories and clone to your local machine to customize for your specific needs.
 
-## Working with CoraBot
-To get up and developing on the CoraBot you will need:
-- Clone the CoraBot repo, or you fork of it.
-- Clone the Bot Framework from here: https://github.com/Microsoft/botbuilder-dotnet/#packages
-- Install the Bot emulator from here: https://github.com/Microsoft/BotFramework-Emulator/releases/tag/v4.9.0
-- Install the CosmosDB emulator from here: https://aka.ms/cosmosdb-emulator
-
-Environment:
-- Set the solution configuration to debug which will use the already set appsettings.Development.json
-- Set the Startup project to Bot.
-- Start the Cosmos DB emulator
-- Start the Bot Framework Emulator.
-
-### First time
-- Go ahead and open the MasterDialog.cs and add a breakpoint at line 35.
-- Hit F5 to start debugging, the localhost:5001 will open the browser with a not found error.
-- Open the Bot Emulator, select Open Bot, enter http://localhost:5001/api/Messages and Connect.
-- Type a message and the breakpoint should be hit.  
-
-####Congratulations you are up and running!
-
-## Working with Website
-
-For the website contact on we are using the DotNetCoreReactImplementation.  
-
-## Working with DataModel
-
-NYI
-
-## Working with GettingStarted
-
-In progress
