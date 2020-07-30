@@ -224,7 +224,7 @@
                         },
                         {
                             "name": "bingMapsAPI__key",
-                            "value": ""
+                            "value": "[parameters('bingMapsAPI_key')]"
                         },
                         {
                             "name": "CosmosDb__Account",
@@ -321,7 +321,7 @@
                         },
                         {
                             "name": "bingMapsAPI__key",
-                            "value": "[parameters(bingMapsAPI_key)]"
+                            "value": "[parameters('bingMapsAPI_key')]"
                         },
                         {
                             "name": "CosmosDb__Account",
@@ -651,5 +651,13 @@
         }
     ],
     "outputs": {
+        "WebPublishProfile": {
+            "type": "object",
+            "value": "[list(concat('Microsoft.Web/sites/', parameters('ProjectName') ,'/config/publishingcredentials'), '2016-08-01')]"
+          },
+        "BotPublishProfile": {
+            "type": "object",
+            "value": "[list(concat('Microsoft.Web/sites/', variables('bot_Name') ,'/config/publishingcredentials'), '2016-08-01')]"
+          }
     }
 }
