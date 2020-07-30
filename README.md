@@ -1,4 +1,3 @@
-![Manual workflow](https://github.com/RogerBestMsft/GettingStarted/workflows/Manual%20workflow/badge.svg)
 
 # GettingStarted
 If you're not sure what to do, start here!
