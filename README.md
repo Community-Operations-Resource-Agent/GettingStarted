@@ -1,47 +1,53 @@
+
 # GettingStarted
 If you're not sure what to do, start here!
 
-## TO DO
-Add deployment to create resources and the necessary information here.
-
-# Developer Getting Started
+# Overview
 There are four projects; 
 - Getting Started focuses on getting the infrastructure created in the least amount of effort.  This will include scripts, ARM templates, and documents.
 - CoraBot contains the code for the bot and the messaging.
 - Website has the web site code.
 - DataModel, will eventually have a generalized data interface.  NYI
 
-The basic workflow is to make a fork of the project that you are working on and when done submit a PR back.
+Fork each of the repositories and clone to your local machine to customize for your specific needs.
 
-## Working with CoraBot
-To get up and developing on the CoraBot you will need:
-- Clone the CoraBot repo, or you fork of it.
-- Clone the Bot Framework from here: https://github.com/Microsoft/botbuilder-dotnet/#packages
-- Install the Bot emulator from here: https://github.com/Microsoft/BotFramework-Emulator/releases/tag/v4.9.0
-- Install the CosmosDB emulator from here: https://aka.ms/cosmosdb-emulator
+# Create Azure Resources
+The DeployResource Powershell script will do the initial deployment of the Azure resource to get your version of the CORA project site up and running.
 
-Environment:
-- Set the solution configuration to debug which will use the already set appsettings.Development.json
-- Set the Startup project to Bot.
-- Start the Cosmos DB emulator
-- Start the Bot Framework Emulator.
+####The following parameters are available for the script:
+- **ProjectName** - This is the name that will be used for the Web site, and as a prefix for the other resources to allow easier management, ie CORAProject
+- **ProjectRegion** - The region that the resources will be deployed to, the default region is WestUS2.  For more information https://azure.microsoft.com/en-us/global-infrastructure/geographies/
 
-### First time
-- Go ahead and open the MasterDialog.cs and add a breakpoint at line 35.
-- Hit F5 to start debugging, the localhost:5001 will open the browser with a not found error.
-- Open the Bot Emulator, select Open Bot, enter http://localhost:5001/api/Messages and Connect.
-- Type a message and the breakpoint should be hit.  
+- **sendGrid_Email** - If you want to include WebChat we use SendGrid to interface with, for more details see the SendGrid section below.
+- **sendGrid_Acct_Password** - The SendGrid password.
 
-####Congratulations you are up and running!
+- **twilio_smsNumber** - If you want to include SMS, we use Twilio to interact with, for more details see the Twilio SMS section below.
+- **twilio_accountId** - The Twilio Account ID
+- **twilio_authentication** - A Twilio Authentication token.
 
-## Working with Website
+- **bingMapsAPI_key** - For the maps functionality a Bing Maps key is required, see the Bing Map API below
 
-For the website contact on we are using the DotNetCoreReactImplementation.  
+Some of the functionality Email and SMS management require seperate accounts.
+## SendGrid
+If you don't have a SendGrid account don't enter an email account and the deployment will occur without the SendGrid resource. We use SendGrid to manage email, you can setup a free account. https://sendgrid.com
+## Twilio SMS 
+If you don't have a Twilio account don't enter a phone number and the deployment will occur without the SMS resource. You can setup a free account: https://www.twilio.com/try-twilio.
+## Bing Map API
+See https://www.bingmapsportal.com/ to get a developer key.
 
-## Working with DataModel
+# Manual To Do
 
-NYI
+In the Website and CoraBot repositories there are existing action file, to get these working there are a few steps that we hope to eventually automate.
 
-## Working with GettingStarted
+For the **Website**:
+- In Azure open the Project Name App service and select "Get Publish Profile", this will download the file to your computer.
+- In the Website repo add a secret named "PROJECTCORAWEBSITE_PUBLISHPROFILE" the value for that secret will be the data in the file from above.
+    - Modify the file "BuildAndDeployWebsite.yml" go to line 66 and replace CoraProject with the project name you used for the Powershell script.
+    - Enable actions on the repo, and commit the changes.  The action will run on changes to Main.
+    
+For the **BOT**
+- In Azure open the Project Name bot App service (if the project name is foo look for 'foobot') and select "Get Publish Profile", this will download the file to your computer.
+- In the CoraBot repo we will do something similiar, add a secret named "AZURE_FUNCTIONAPP_PUBLISH_PROFILE" the value for that secret will be the data in the file from above.
+    - Modify the file "BotBuildAndDeploy.yml" go to line 8 and replace CoraProject with the project name you used for the Powershell script.
+    - Enable actions on the repo, and commit the changes.  The action will run on changes to Main.
 
-In progress

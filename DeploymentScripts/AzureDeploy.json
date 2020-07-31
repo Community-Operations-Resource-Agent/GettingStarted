@@ -1,0 +1,663 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "ProjectName": {
+            "type": "string"
+        },        
+        "webApp_alwaysOn": {
+            "type": "bool",
+            "defaultValue": false
+        },
+        "webApp_sku": {
+            "type": "string",
+            "defaultValue": "Free"
+        },
+        "webApp_skuCode": {
+            "type": "string",
+            "defaultValue": "F1"
+        },
+        "webApp_workerSize": {
+            "type": "string",
+            "defaultValue": "0"
+        },
+        "webApp_workerSizeId": {
+            "type": "string",
+            "defaultValue": "0"
+        },
+        "webApp_numberOfWorkers": {
+            "type": "string",
+            "defaultValue": "1"
+        },
+        "webApp_currentStack": {
+            "type": "string",
+            "defaultValue": "dotnetcore"
+        },
+        "webApp_phpVersion": {
+            "type": "string",
+            "defaultValue": "OFF"
+        },
+        "cosmosDb_defaultExperience": {
+            "type": "string",
+            "defaultValue": "Core (SQL)"
+        },
+        "cosmosDb_isZoneRedundant": {
+            "type": "string",
+            "defaultValue": "false"
+        },
+        "map_pricingSpec": {
+            "type": "String",
+            "defaultValue": "s1"
+        },
+        "cognitive_sku": {
+            "type": "string",
+            "defaultValue": "S0"
+        },
+        "bot_Sku": {
+            "defaultValue": "S1",
+            "type": "string",
+            "metadata": {
+                "description": "The pricing tier of the Bot Service Registration. Acceptable values are F0 and S1."
+            }
+        },        
+        "bot_MsaAppId":{
+            "type": "string"
+        },
+        "bot_MsaPassword":{
+            "type": "securestring"
+        },
+        "sendGrid_Acct_Password" : {
+            "type": "securestring"
+        },
+        "sendGrid_Email": {
+            "type": "string"
+        },
+        "twilio_smsNumber":{
+            "type": "string"
+        },
+        "twilio_accountId":{
+            "type":"securestring"
+        },
+        "twilio_authentication":{
+            "type": "securestring"
+        },
+        "bingMapsAPI_key":{
+            "type": "securestring"
+        }
+    },
+    "variables": {
+        "hostingPlanName": "[concat(parameters('ProjectName'),'_plan_', uniqueString(deployment().name))]",
+        "cosmosDBAccountName": "[toLower(concat(parameters('ProjectName'),'-cosmosdb-', uniqueString(deployment().name)))]",
+        "errorLink": "[concat('https://', parameters('ProjectName'), '.scm.azurewebsites.net/detectors?type=tools&name=eventviewer')]",
+        "mapAccountName": "[concat(parameters('ProjectName'),'_map_', uniqueString(deployment().name))]",
+        "cognitiveServicesName": "[concat(parameters('ProjectName'),'_cognitive_', uniqueString(deployment().name))]",
+        "bot_Name": "[concat(parameters('ProjectName'),'bot')]",
+        "bot_AppName": "[concat(parameters('ProjectName'),'botapp')]",
+        "bot_SiteHost": "[concat(variables('bot_Name'), '.azurewebsites.net')]",
+        "bot_Endpoint": "[concat('https://', variables('bot_SiteHost'), '/api/messages')]",
+        "sendGridAccountName": "[concat(parameters('ProjectName'),'_sendgrid_', uniqueString(deployment().name))]",
+        "storageAccountName": "[toLower(concat(parameters('ProjectName'),'store'))]"
+    },
+    "resources": [  
+        {
+            "condition": "[not(empty(parameters('sendGrid_Email')))]",
+            "name": "[variables('sendgridAccountName')]",
+            "type": "Sendgrid.Email/accounts",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-01-01",
+            "plan": {
+                "name": "free",
+                "publisher": "Sendgrid",
+                "product": "sendgrid_azure",
+                "promotionCode": ""
+            },
+            "properties": {
+                "password": "[parameters('sendGrid_Acct_Password')]",
+                "acceptMarketingEmails": "0",
+                "email": "[parameters('sendGrid_Email')]"
+            }
+        },      
+        {
+            "apiVersion": "2017-04-18",
+            "name": "[variables('cognitiveServicesName')]",
+            "location": "westus",
+            "type": "Microsoft.CognitiveServices/accounts",
+            "kind": "CognitiveServices",
+            "sku": {
+                "name": "[parameters('cognitive_sku')]"
+            },
+            "properties": {
+                "customSubDomainName": "[parameters('ProjectName')]",
+                "privateEndpointConnections": [],
+                "publicNetworkAccess": "Enabled"
+            }
+        },
+        {
+            "type": "Microsoft.Maps/accounts",
+            "apiVersion": "2018-05-01",
+            "name": "[variables('mapAccountName')]",
+            "location": "global",
+            "sku": {
+                "name": "[parameters('map_pricingSpec')]"
+            },
+            "properties": {}
+        },
+        {
+            "apiVersion": "2020-04-01",
+            "kind": "GlobalDocumentDB",
+            "type": "Microsoft.DocumentDb/databaseAccounts",
+            "name": "[variables('cosmosDBAccountName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "databaseAccountOfferType": "Standard",
+                "locations": [
+                    {
+                        "id": "[concat(variables('cosmosDBAccountName'), '-', resourceGroup().location)]",
+                        "failoverPriority": 0,
+                        "locationName": "[resourceGroup().location]"
+                    }
+                ],
+                "enableMultipleWriteLocations": false,
+                "isVirtualNetworkFilterEnabled": false,
+                "virtualNetworkRules": [],
+                "ipRangeFilter": "",
+                "dependsOn": [],
+                "capabilities": [],
+                "enableFreeTier": false
+            },
+            "tags": {
+                "Project": "[parameters('ProjectName')]",
+                "defaultExperience": "Core (SQL)",
+                "hidden-cosmos-mmspecial": "",
+                "CosmosAccountType": "Non-Production"
+            }
+        },
+        {
+            "apiVersion": "2019-06-01",
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[variables('storageAccountName')]",
+            "location": "[resourceGroup().location]",
+            "tags": {},
+            "sku": {
+                "name": "Standard_LRS"
+            },
+            "properties": {
+                "supportsHttpsTrafficOnly": true
+            }
+        },
+        {
+            "apiVersion": "2018-11-01",
+            "name": "[parameters('ProjectName')]",
+            "type": "Microsoft.Web/sites",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "Project": "[parameters('ProjectName')]"
+            },
+            "dependsOn": [
+                "[concat('microsoft.insights/components/', parameters('ProjectName'))]",
+                "[concat('Microsoft.Web/serverfarms/', variables('hostingPlanName'))]",
+                "[concat('Microsoft.DocumentDb/databaseAccounts/', variables('cosmosDBAccountName'))]"
+            ],
+            "properties": {
+                "name": "[parameters('ProjectName')]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(concat('microsoft.insights/components/', parameters('ProjectName')), '2015-05-01').InstrumentationKey]"
+                        },
+                        {
+                            "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                            "value": "[reference(concat('microsoft.insights/components/', parameters('ProjectName')), '2015-05-01').ConnectionString]"
+                        },
+                        {
+                            "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+                            "value": "~2"
+                        },
+                        {
+                            "name": "XDT_MicrosoftApplicationInsights_Mode",
+                            "value": "default"
+                        },
+                        {
+                            "name": "ANCM_ADDITIONAL_ERROR_PAGE_LINK",
+                            "value": "[variables('errorLink')]"
+                        },
+                        {
+                            "name": "bingMapsAPI__key",
+                            "value": "[parameters('bingMapsAPI_key')]"
+                        },
+                        {
+                            "name": "CosmosDb__Account",
+                            "value": "[reference(resourceId('Microsoft.DocumentDb/databaseAccounts/', variables('cosmosDBAccountName'))).documentEndpoint]"
+
+                        },
+                        {
+                            "name": "CosmosDb__DatabaseName",
+                            "value": "Data"
+
+                        },
+                        {
+                            "name": "CosmosDb__Key",
+                            "value": "[listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts/', variables('cosmosDBAccountName')),'2020-04-01').primaryMasterKey]"
+
+                        },
+                        {
+                            "name": "CosmosDb__needContainerName",
+                            "value": "Needs"
+
+                        },
+                        {
+                            "name": "CosmosDb__resourceContainerName",
+                            "value": "Resources"
+
+                        },
+                        {
+                            "name": "CosmosDb__userContainerName",
+                            "value": "Users"
+
+                        },
+                        {
+                            "name": "SENDGRID_API_KEY",
+                            "value": ""
+
+                        },
+                        {
+                            "name": "WEBSITE_RUN_FROM_PACKAGE",
+                            "value": "1"
+
+                        }
+                    ],
+                    "metadata": [
+                        {
+                            "name": "CURRENT_STACK",
+                            "value": "[parameters('webApp_currentStack')]"
+                        }
+                    ],
+                    "phpVersion": "[parameters('webApp_phpVersion')]",
+                    "alwaysOn": "[parameters('webApp_alwaysOn')]"
+                },
+                "serverFarmId": "[concat('/subscriptions/', subscription().subscriptionId,'/resourcegroups/', resourceGroup().name, '/providers/Microsoft.Web/serverfarms/', variables('hostingPlanName'))]",
+                "clientAffinityEnabled": true
+            }
+        },
+        {
+            "apiVersion": "2018-11-01",
+            "name": "[variables('bot_Name')]",
+            "type": "Microsoft.Web/sites",
+            "kind": "functionapp",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "Project": "[parameters('ProjectName')]"
+            },
+            "dependsOn": [
+                "[concat('microsoft.insights/components/', parameters('ProjectName'))]",
+                "[concat('Microsoft.Web/serverfarms/', variables('hostingPlanName'))]",
+                "[concat('Microsoft.DocumentDb/databaseAccounts/', variables('cosmosDBAccountName'))]",
+                "[concat('Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+            ],
+            "properties": {
+                "name": "[variables('bot_Name')]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+                            "value": "[reference(concat('microsoft.insights/components/', parameters('ProjectName')), '2015-05-01').InstrumentationKey]"
+                        },
+                        {
+                            "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                            "value": "[reference(concat('microsoft.insights/components/', parameters('ProjectName')), '2015-05-01').ConnectionString]"
+                        },
+                        {
+                            "name": "ApplicationInsightsAgent_EXTENSION_VERSION",
+                            "value": "~2"
+                        },
+                        {
+                            "name": "XDT_MicrosoftApplicationInsights_Mode",
+                            "value": "default"
+                        },
+                        {
+                            "name": "ANCM_ADDITIONAL_ERROR_PAGE_LINK",
+                            "value": "[variables('errorLink')]"
+                        },
+                        {
+                            "name": "bingMapsAPI__key",
+                            "value": "[parameters('bingMapsAPI_key')]"
+                        },
+                        {
+                            "name": "CosmosDb__Account",
+                            "value": "[reference(resourceId('Microsoft.DocumentDb/databaseAccounts/', variables('cosmosDBAccountName'))).documentEndpoint]"
+
+                        },
+                        {
+                            "name": "CosmosDb__DatabaseName",
+                            "value": "Data"
+
+                        },
+                        {
+                            "name": "CosmosDb__Key",
+                            "value": "[listKeys(resourceId('Microsoft.DocumentDb/databaseAccounts/', variables('cosmosDBAccountName')),'2020-04-01').primaryMasterKey]"
+
+                        },
+                        {
+                            "name": "CosmosDb__needContainerName",
+                            "value": "Needs"
+
+                        },
+                        {
+                            "name": "CosmosDb__resourceContainerName",
+                            "value": "Resources"
+
+                        },
+                        {
+                            "name": "CosmosDb__userContainerName",
+                            "value": "Users"
+
+                        },
+                        {
+                            "name": "SENDGRID_API_KEY",
+                            "value": ""
+
+                        },
+                        {
+                            "name": "WEBSITE_RUN_FROM_PACKAGE",
+                            "value": "1"
+
+                        },
+                        {
+                            "name": "AzureWebJobsStorage",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        },
+                        {
+                            "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+                            "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]"
+                        }
+                    ],
+                    "metadata": [
+                        {
+                            "name": "CURRENT_STACK",
+                            "value": "[parameters('webApp_currentStack')]"
+                        }
+                    ],
+                    "phpVersion": "[parameters('webApp_phpVersion')]",
+                    "alwaysOn": "[parameters('webApp_alwaysOn')]"
+                },
+                "serverFarmId": "[concat('/subscriptions/', subscription().subscriptionId,'/resourcegroups/', resourceGroup().name, '/providers/Microsoft.Web/serverfarms/', variables('hostingPlanName'))]",
+                "clientAffinityEnabled": true
+            }
+        },
+        {
+            "apiVersion": "2018-11-01",
+            "name": "[variables('hostingPlanName')]",
+            "type": "Microsoft.Web/serverfarms",
+            "location": "[resourceGroup().location]",
+            "kind": "",
+            "tags": {
+                "Project": "[parameters('ProjectName')]"
+            },
+            "dependsOn": [],
+            "properties": {
+                "name": "[variables('hostingPlanName')]",
+                "workerSize": "[parameters('webApp_workerSize')]",
+                "workerSizeId": "[parameters('webApp_workerSizeId')]",
+                "numberOfWorkers": "[parameters('webApp_numberOfWorkers')]"
+            },
+            "sku": {
+                "Tier": "[parameters('webApp_sku')]",
+                "Name": "[parameters('webApp_skuCode')]"
+            }
+        },
+        {
+            "apiVersion": "2015-05-01",
+            "name": "[parameters('ProjectName')]",
+            "type": "microsoft.insights/components",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "Project": "[parameters('ProjectName')]"
+            },
+            "properties": {
+                "ApplicationId": "[parameters('ProjectName')]",
+                "Request_Source": "IbizaWebAppExtensionCreate"
+            }
+        },
+        {
+            "comments": "Create a Web App using an App Service Plan for the Bot",
+            "type": "Microsoft.Web/sites",
+            "apiVersion": "2015-08-01",
+            "location": "[resourceGroup().location]",
+            "kind": "app",
+            "dependsOn": [
+                "[concat('Microsoft.Web/serverfarms/', variables('hostingPlanName'))]"
+            ],
+            "name": "[variables('bot_AppName')]",
+            "properties": {
+                "name": "[variables('bot_AppName')]",
+                "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+                "siteConfig": {
+                    "appSettings": [
+                        {
+                            "name": "WEBSITE_NODE_DEFAULT_VERSION",
+                            "value": "10.14.1"
+                        },
+                        {
+                            "name": "MicrosoftAppId",
+                            "value": "[parameters('bot_MsaAppId')]"
+                        },
+                        {
+                            "name": "MicrosoftAppPassword",
+                            "value": "[parameters('bot_MsaPassword')]"
+                        }
+                    ],
+                    "cors": {
+                        "allowedOrigins": [
+                            "https://botservice.hosting.portal.azure.net",
+                            "https://hosting.onecloud.azure-test.net/"
+                        ]
+                    },
+                    "webSocketsEnabled": true
+                }
+            }
+        },
+        {
+            "apiVersion": "2017-12-01",
+            "type": "Microsoft.BotService/botServices",
+            "name": "[variables('bot_Name')]",
+            "location": "global",
+            "kind": "sdk",
+            "sku": {
+                "name": "[parameters('bot_Sku')]"
+            },
+            "properties": {
+                "displayName": "[variables('bot_Name')]",
+                "endpoint": "[variables('bot_Endpoint')]",
+                "iconUrl": "https://docs.botframework.com/static/devportal/client/images/bot-framework-default.png",
+                "msaAppId": "[parameters('bot_MsaAppId')]",
+                "luisAppIds":[]
+            },
+            "dependsOn": [
+                "[resourceId('Microsoft.Web/sites/', variables('bot_Name'))]"
+            ]
+        },
+        {
+            "condition": "[not(empty(parameters('twilio_smsNumber')))]",
+            "type": "Microsoft.BotService/botServices/channels",
+            "apiVersion": "2018-07-12",
+            "name": "[concat(variables('bot_Name'), '/SmsChannel')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.BotService/botServices', variables('bot_Name'))]"
+            ],
+            "properties": {
+                "properties": {
+                    "phone": "[parameters('twilio_smsNumber')]",
+                    "accountSID": "[parameters('twilio_accountId')]",
+                    "isValidated": true,
+                    "isEnabled": true,
+                    "authToken": "[parameters('twilio_authentication')]"
+                },
+                "channelName": "SmsChannel"
+            }
+        },
+        {
+            "type": "Microsoft.BotService/botServices/channels",
+            "apiVersion": "2018-07-12",
+            "name": "[concat(variables('bot_Name'), '/WebChatChannel')]",
+            "location": "global",
+            "dependsOn": [
+                "[resourceId('Microsoft.BotService/botServices', variables('bot_Name'))]"
+            ],
+            "properties": {
+                "properties": {
+                    "sites": [
+                        {
+                            "siteName": "Default Site",
+                            "isEnabled": true,
+                            "enablePreview": true
+                        }
+                    ]
+                },
+                "channelName": "WebChatChannel"
+            }
+        },
+        {
+            "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+            "apiVersion": "2020-04-01",
+            "name": "[concat(variables('cosmosDBAccountName'), '/Data')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDBAccountName'))]"
+            ],
+            "properties": {
+                "resource": {
+                    "id": "Data"
+                },
+                "options": {}
+            }
+        },
+        {
+            "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+            "apiVersion": "2020-04-01",
+            "name": "[concat(variables('cosmosDBAccountName'), '/Data/Needs')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosDBAccountName'), 'Data')]",
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDBAccountName'))]"
+            ],
+            "properties": {
+                "resource": {
+                    "id": "Needs",
+                    "indexingPolicy": {
+                        "indexingMode": "consistent",
+                        "automatic": true,
+                        "includedPaths": [
+                            {
+                                "path": "/*"
+                            }
+                        ],
+                        "excludedPaths": [
+                            {
+                                "path": "/\"_etag\"/?"
+                            }
+                        ]
+                    },
+                    "partitionKey": {
+                        "paths": [
+                            "/Category"
+                        ],
+                        "kind": "Hash"
+                    },
+                    "conflictResolutionPolicy": {
+                        "mode": "LastWriterWins",
+                        "conflictResolutionPath": "/_ts"
+                    }
+                },
+                "options": {}
+            }
+        },
+        {
+            "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+            "apiVersion": "2020-04-01",
+            "name": "[concat(variables('cosmosDBAccountName'), '/Data/Resources')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosDBAccountName'), 'Data')]",
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDBAccountName'))]"
+            ],
+            "properties": {
+                "resource": {
+                    "id": "Resources",
+                    "indexingPolicy": {
+                        "indexingMode": "consistent",
+                        "automatic": true,
+                        "includedPaths": [
+                            {
+                                "path": "/*"
+                            }
+                        ],
+                        "excludedPaths": [
+                            {
+                                "path": "/\"_etag\"/?"
+                            }
+                        ]
+                    },
+                    "partitionKey": {
+                        "paths": [
+                            "/Category"
+                        ],
+                        "kind": "Hash"
+                    },
+                    "conflictResolutionPolicy": {
+                        "mode": "LastWriterWins",
+                        "conflictResolutionPath": "/_ts"
+                    }
+                },
+                "options": {}
+            }
+        },
+        {
+            "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+            "apiVersion": "2020-04-01",
+            "name": "[concat(variables('cosmosDBAccountName'), '/Data/Users')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cosmosDBAccountName'), 'Data')]",
+                "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cosmosDBAccountName'))]"
+            ],
+            "properties": {
+                "resource": {
+                    "id": "Users",
+                    "indexingPolicy": {
+                        "indexingMode": "consistent",
+                        "automatic": true,
+                        "includedPaths": [
+                            {
+                                "path": "/*"
+                            }
+                        ],
+                        "excludedPaths": [
+                            {
+                                "path": "/\"_etag\"/?"
+                            }
+                        ]
+                    },
+                    "partitionKey": {
+                        "paths": [
+                            "/PhoneNumber"
+                        ],
+                        "kind": "Hash"
+                    },
+                    "conflictResolutionPolicy": {
+                        "mode": "LastWriterWins",
+                        "conflictResolutionPath": "/_ts"
+                    }
+                },
+                "options": {}
+            }
+        }
+    ],
+    "outputs": {
+        "WebPublishProfile": {
+            "type": "object",
+            "value": "[list(concat('Microsoft.Web/sites/', parameters('ProjectName') ,'/config/publishingcredentials'), '2016-08-01')]"
+          },
+        "BotPublishProfile": {
+            "type": "object",
+            "value": "[list(concat('Microsoft.Web/sites/', variables('bot_Name') ,'/config/publishingcredentials'), '2016-08-01')]"
+          }
+    }
+}
